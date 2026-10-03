@@ -64,4 +64,63 @@ def is_orthogonal(R):
     # checking for this boi --> Rt.R = I
     # allclose checks if all elements of the two arrays are equal within a tolerance
     return np.allclose(R.T @ R, I)
+
+def perspective_projection(P, focal_length):
+    x, y, z = P
+
+    if z == 0:
+        raise ValueError("Cannot project a point with z = 0")
+
+    return np.array([
+        focal_length * x / z,
+        focal_length * y / z
+    ])
+    """Why divide by z?
+        This creates the perspective effect."""
     
+
+def orthographic_projection(P):     #this boi is for depth
+    x, y, z = P
+
+    return np.array([x, y])
+
+
+def camera_projection(P, C, R, focal_length):
+    P_cam = world_to_camera(P, C, R)
+
+    P_2D = perspective_projection(
+        P_cam,
+        focal_length
+    )
+
+    return P_2D
+
+
+
+def look_at_rotation(camera_position, target):
+    direction = target - camera_position
+    direction = direction / np.linalg.norm(direction)
+
+    forward = direction
+
+    up = np.array([0.0, 1.0, 0.0])
+
+    right = np.cross(up, forward)
+    right = right / np.linalg.norm(right)
+
+    up = np.cross(forward, right)
+
+    """
+    right       → X-axis
+    up          → Y-axis
+    forward     → Z-axis
+    """
+
+    # Store the camera axes as columns of the rotation matrix
+    R = np.column_stack([
+        right,
+        up,
+        forward
+    ])
+
+    return R
