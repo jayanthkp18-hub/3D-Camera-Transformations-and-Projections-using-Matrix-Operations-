@@ -52,7 +52,7 @@ def homogeneous_point(x, y, z):
     return np.array([x, y, z, 1])
 
 
-def P_camera(P,C,R):
+def world_to_camera(P,C,R):
     relative = P - C
     
     return R.T @ relative           #this thingy is P_cam=Rt*(P-C)
