@@ -1,5 +1,11 @@
 import numpy as np
 
+
+
+# ============================================================
+# rotation, translation and M part ^_~
+# ============================================================
+
 def RotateX(theta):
     c= np.cos(theta)
     s= np.sin(theta)
@@ -45,6 +51,9 @@ def transform_point(M, P):
 
 
 
+# ============================================================
+# calculatio related function to ez the work boiiii part ^_~
+# ============================================================
 
 
 def homogeneous_point(x, y, z):
@@ -64,6 +73,13 @@ def is_orthogonal(R):
     # checking for this boi --> Rt.R = I
     # allclose checks if all elements of the two arrays are equal within a tolerance
     return np.allclose(R.T @ R, I)
+
+
+
+# ============================================================
+# All projection mathematics part ^_~
+# ============================================================
+
 
 def perspective_projection(P, focal_length):
     x, y, z = P
@@ -94,6 +110,12 @@ def camera_projection(P, C, R, focal_length):
     )
 
     return P_2D
+
+
+
+# ============================================================
+# making function calling work ez boiiii part ^_~
+# ============================================================
 
 
 # this thing is just to make function calling ez
@@ -127,6 +149,11 @@ def project_vertices(vertices, camera_position, camera_target, focal_length):
 
     return np.array(projected_vertices)
 
+
+
+# ============================================================
+# this is to determine direction of camera part ^_~
+# ============================================================
 
 
 def look_at_rotation(camera_position, target):
