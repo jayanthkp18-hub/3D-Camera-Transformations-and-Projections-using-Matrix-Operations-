@@ -96,6 +96,38 @@ def camera_projection(P, C, R, focal_length):
     return P_2D
 
 
+# this thing is just to make function calling ez
+def project_vertices(vertices, camera_position, camera_target, focal_length):
+    
+    # Create the camera rotation matrix
+    R = look_at_rotation(
+        camera_position,
+        camera_target
+    )
+
+    projected_vertices = []
+
+    # Project each 3D vertex into 2D
+    for vertex in vertices:
+
+        # World space → camera space
+        camera_point = world_to_camera(
+            vertex,
+            camera_position,
+            R
+        )
+
+        # Camera space → 2D
+        projected_point = perspective_projection(
+            camera_point,
+            focal_length
+        )
+
+        projected_vertices.append(projected_point)
+
+    return np.array(projected_vertices)
+
+
 
 def look_at_rotation(camera_position, target):
     direction = target - camera_position
@@ -124,3 +156,5 @@ def look_at_rotation(camera_position, target):
     ])
 
     return R
+
+
