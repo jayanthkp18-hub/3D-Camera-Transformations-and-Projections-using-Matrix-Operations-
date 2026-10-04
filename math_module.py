@@ -52,7 +52,7 @@ def transform_point(M, P):
 
 
 # ============================================================
-# calculatio related function to ez the work boiiii part ^_~
+# calculation related function to ez the work boiiii part ^_~
 # ============================================================
 
 
