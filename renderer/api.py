@@ -24,6 +24,7 @@ Conventions (agree on these with Persons 1 and 2!)
 """
 
 from abc import ABC, abstractmethod
+
 import numpy as np
 
 

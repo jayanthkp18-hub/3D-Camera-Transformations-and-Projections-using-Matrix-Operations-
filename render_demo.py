@@ -6,12 +6,15 @@ Writes PNG files next to this script.
 """
 
 import numpy as np
-
-import scene_cube as cfg                          # Person 4's settings
+import scene_cube as cfg  # Person 4's settings
+from integration import (
+    build_team_scene,
+    orthographic_matrix,
+    projection_from_scene_module,
+    view_matrix,
+)
 from renderer import create_renderer
 from renderer.imageio import save_png
-from integration import (build_team_scene, view_matrix,
-                         projection_from_scene_module, orthographic_matrix)
 
 
 def main():
