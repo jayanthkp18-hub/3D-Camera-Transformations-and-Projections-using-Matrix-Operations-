@@ -2,6 +2,7 @@ import numpy as np
 import streamlit as st
 
 import scene_cube
+import scene_pyramid
 from integration import (
     orthographic_matrix,
     perspective_matrix,
@@ -25,6 +26,22 @@ def display_matrix(matrix):
     )
 
     st.latex(matrix_latex)
+
+
+# Display a vector as a mathematical column vector
+def display_vector(vector):
+    rows = []
+
+    for value in vector:
+        rows.append(f"{value:.4f}")
+
+    vector_latex = (
+        r"\begin{bmatrix}"
+        + r" \\ ".join(rows)
+        + r"\end{bmatrix}"
+    )
+
+    st.latex(vector_latex)
 
 
 # Create a 4x4 rotation matrix from X, Y and Z rotation angles
@@ -70,10 +87,7 @@ def model_matrix(rx, ry, rz, tx, ty, tz, scale):
     return M
 
 
-# ---------------------------------------------------------
 # Page configuration
-# ---------------------------------------------------------
-
 st.set_page_config(
     page_title="3D Camera Transformations",
     layout="wide"
@@ -81,11 +95,13 @@ st.set_page_config(
 
 st.title("3D Camera Transformations and Projection")
 
+st.caption(
+    "Interactive visualization of model, view and projection "
+    "transformations using 3D objects."
+)
 
-# ---------------------------------------------------------
+
 # Object selection
-# ---------------------------------------------------------
-
 st.subheader("Object Selection")
 
 object_choice = st.radio(
@@ -95,10 +111,7 @@ object_choice = st.radio(
 )
 
 
-# ---------------------------------------------------------
 # Projection selection
-# ---------------------------------------------------------
-
 st.subheader("Projection Type")
 
 projection_choice = st.radio(
@@ -108,10 +121,7 @@ projection_choice = st.radio(
 )
 
 
-# ---------------------------------------------------------
 # Camera controls
-# ---------------------------------------------------------
-
 st.subheader("Camera Controls")
 
 col1, col2, col3 = st.columns(3)
@@ -172,8 +182,6 @@ with col3:
         0.5
     )
 
-
-# Create camera position and target vectors
 camera_position = np.array([
     camera_x,
     camera_y,
@@ -187,10 +195,7 @@ camera_target = np.array([
 ])
 
 
-# ---------------------------------------------------------
 # Model transformation controls
-# ---------------------------------------------------------
-
 st.subheader("Object Transformations")
 
 col1, col2, col3 = st.columns(3)
@@ -260,8 +265,6 @@ with col4:
         0.1
     )
 
-
-# Create the model matrix from the transformation controls
 M = model_matrix(
     rotation_x,
     rotation_y,
@@ -273,10 +276,7 @@ M = model_matrix(
 )
 
 
-# ---------------------------------------------------------
 # Projection controls
-# ---------------------------------------------------------
-
 st.subheader("Projection Controls")
 
 if projection_choice == "Perspective":
@@ -371,20 +371,14 @@ else:
         )
 
 
-# ---------------------------------------------------------
 # Calculate View Matrix
-# ---------------------------------------------------------
-
 V = view_matrix(
     camera_position,
     camera_target
 )
 
 
-# ---------------------------------------------------------
 # Calculate Projection Matrix
-# ---------------------------------------------------------
-
 if projection_choice == "Perspective":
 
     aspect = (
@@ -411,10 +405,7 @@ else:
     )
 
 
-# ---------------------------------------------------------
 # Render the selected object
-# ---------------------------------------------------------
-
 image = render_scene(
     object_choice=object_choice,
     camera_position=camera_position,
@@ -424,10 +415,7 @@ image = render_scene(
 )
 
 
-# ---------------------------------------------------------
 # Display rendered scene
-# ---------------------------------------------------------
-
 st.subheader("3D Scene")
 
 st.image(
@@ -437,10 +425,7 @@ st.image(
 )
 
 
-# ---------------------------------------------------------
 # Camera information
-# ---------------------------------------------------------
-
 st.subheader("Camera Information")
 
 col1, col2 = st.columns(2)
@@ -458,10 +443,7 @@ with col2:
     )
 
 
-# ---------------------------------------------------------
 # Object transformation information
-# ---------------------------------------------------------
-
 st.subheader("Object Transformation")
 
 st.write(
@@ -483,10 +465,7 @@ st.write(
 )
 
 
-# ---------------------------------------------------------
 # Projection information
-# ---------------------------------------------------------
-
 st.subheader("Projection Information")
 
 st.write(
@@ -534,37 +513,20 @@ else:
     )
 
 
-# ---------------------------------------------------------
-# Model Matrix
-# ---------------------------------------------------------
+# Transformation matrices
+st.subheader("Transformation Matrices")
 
-st.subheader("Model Matrix")
+with st.expander("Model Matrix", expanded=True):
+    display_matrix(M)
 
-display_matrix(M)
+with st.expander("View Matrix", expanded=True):
+    display_matrix(V)
 
-
-# ---------------------------------------------------------
-# View Matrix
-# ---------------------------------------------------------
-
-st.subheader("View Matrix")
-
-display_matrix(V)
+with st.expander("Projection Matrix", expanded=True):
+    display_matrix(P)
 
 
-# ---------------------------------------------------------
-# Projection Matrix
-# ---------------------------------------------------------
-
-st.subheader("Projection Matrix")
-
-display_matrix(P)
-
-
-# ---------------------------------------------------------
 # Transformation Pipeline
-# ---------------------------------------------------------
-
 st.subheader("Transformation Pipeline")
 
 st.markdown("""
@@ -586,3 +548,158 @@ st.markdown("""
 ↓
 **Screen Coordinates**
 """)
+
+
+# Matrix Multiplication Demonstration
+with st.expander(
+    "Matrix Multiplication Demonstration",
+    expanded=True
+):
+
+    demo_object = st.selectbox(
+        "Select Object",
+        ["Cube", "Pyramid"]
+    )
+
+    if demo_object == "Cube":
+        demo_vertices = np.asarray(
+            scene_cube.vertices,
+            dtype=float
+        )
+    else:
+        demo_vertices = np.asarray(
+            scene_pyramid.pyramid_vertices,
+            dtype=float
+        )
+
+    vertex_index = st.number_input(
+        "Select Vertex Index",
+        min_value=0,
+        max_value=len(demo_vertices) - 1,
+        value=0,
+        step=1
+    )
+
+    selected_vertex = demo_vertices[int(vertex_index)]
+    vertex_h = np.append(selected_vertex, 1.0)
+
+    # Apply transformations
+    world_vertex = M @ vertex_h
+    camera_vertex = V @ world_vertex
+    clip_vertex = P @ camera_vertex
+
+    # Perspective division
+    if abs(clip_vertex[3]) > 1e-8:
+        ndc_vertex = clip_vertex[:3] / clip_vertex[3]
+    else:
+        ndc_vertex = np.full(3, np.nan)
+
+    # Convert NDC to screen coordinates
+    screen_width = scene_cube.screen_width
+    screen_height = scene_cube.screen_height
+
+    screen_x = (
+        (ndc_vertex[0] + 1) *
+        screen_width /
+        2
+    )
+
+    screen_y = (
+        (1 - ndc_vertex[1]) *
+        screen_height /
+        2
+    )
+
+    # Selected vertex
+    st.write("### 1. Selected Vertex")
+    display_vector(vertex_h)
+
+    # Model transformation
+    st.write("### 2. Model Transformation")
+    st.write("**M × Vertex = World Coordinates**")
+
+    display_matrix(M)
+    display_vector(vertex_h)
+
+    st.write("**= World Coordinates**")
+    display_vector(world_vertex)
+
+    # View transformation
+    st.write("### 3. View Transformation")
+    st.write("**V × World Coordinates = Camera Coordinates**")
+
+    display_matrix(V)
+    display_vector(world_vertex)
+
+    st.write("**= Camera Coordinates**")
+    display_vector(camera_vertex)
+
+    # Projection transformation
+    st.write("### 4. Projection Transformation")
+    st.write("**P × Camera Coordinates = Clip Coordinates**")
+
+    display_matrix(P)
+    display_vector(camera_vertex)
+
+    st.write("**= Clip Coordinates**")
+    display_vector(clip_vertex)
+
+    # NDC
+    st.write("### 5. Perspective Division / NDC")
+    st.write("**NDC = Clip Coordinates / w**")
+    display_vector(ndc_vertex)
+
+    # Screen coordinates
+    st.write("### 6. Screen Coordinates")
+
+    st.write(
+        f"**Screen X:** {screen_x:.2f} px"
+    )
+
+    st.write(
+        f"**Screen Y:** {screen_y:.2f} px"
+    )
+
+    st.write(
+        f"**Screen Position:** "
+        f"({screen_x:.2f}, {screen_y:.2f}) px"
+    )
+
+    # Combined transformation
+    st.write("### 7. Combined Transformation")
+
+    PVM = P @ V @ M
+
+    st.write("**P × V × M**")
+    display_matrix(PVM)
+
+    combined_clip = PVM @ vertex_h
+
+    st.write(
+        "**(P × V × M) × Vertex = Clip Coordinates**"
+    )
+
+    display_vector(combined_clip)
+
+    # Verification
+    st.write("### 8. Verification")
+
+    step_by_step = P @ V @ M @ vertex_h
+    combined_result = PVM @ vertex_h
+
+    difference = np.max(
+        np.abs(step_by_step - combined_result)
+    )
+
+    st.write(
+        f"Maximum difference: **{difference:.8f}**"
+    )
+
+    if difference < 1e-6:
+        st.success(
+            "Both transformation methods produce the same result."
+        )
+    else:
+        st.warning(
+            "The transformation results are different."
+        )
